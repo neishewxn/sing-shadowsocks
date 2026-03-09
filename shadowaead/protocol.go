@@ -280,9 +280,6 @@ func (c *clientPacketConn) ReadPacket(buffer *buf.Buffer) (M.Socksaddr, error) {
 	}
 	buffer.Advance(c.keySaltLength)
 	buffer.Truncate(len(packet))
-	if err != nil {
-		return M.Socksaddr{}, err
-	}
 	return M.SocksaddrSerializer.ReadAddrPort(buffer)
 }
 
