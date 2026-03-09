@@ -601,11 +601,12 @@ func (c *clientPacketConn) ReadPacket(buffer *buf.Buffer) (M.Socksaddr, error) {
 		return M.Socksaddr{}, err
 	}
 
-	if sessionId == c.session.remoteSessionId {
+	switch sessionId {
+	case c.session.remoteSessionId:
 		if !c.session.window.Check(packetId) {
 			return M.Socksaddr{}, ErrPacketIdNotUnique
 		}
-	} else if sessionId == c.session.lastRemoteSessionId {
+	case c.session.lastRemoteSessionId:
 		if !c.session.lastWindow.Check(packetId) {
 			return M.Socksaddr{}, ErrPacketIdNotUnique
 		}
@@ -613,11 +614,12 @@ func (c *clientPacketConn) ReadPacket(buffer *buf.Buffer) (M.Socksaddr, error) {
 
 	var remoteCipher cipher.AEAD
 	if packetHeader != nil {
-		if sessionId == c.session.remoteSessionId {
+		switch sessionId {
+		case c.session.remoteSessionId:
 			remoteCipher = c.session.remoteCipher
-		} else if sessionId == c.session.lastRemoteSessionId {
+		case c.session.lastRemoteSessionId:
 			remoteCipher = c.session.lastRemoteCipher
-		} else {
+		default:
 			key := SessionKey(c.pskList[len(c.pskList)-1], packetHeader[:8], c.keySaltLength)
 			remoteCipher, err = c.constructor(key)
 			if err != nil {
@@ -651,12 +653,13 @@ func (c *clientPacketConn) ReadPacket(buffer *buf.Buffer) (M.Socksaddr, error) {
 		return M.Socksaddr{}, E.Extend(ErrBadTimestamp, "received ", epoch, ", diff ", diff, "s")
 	}
 
-	if sessionId == c.session.remoteSessionId {
+	switch sessionId {
+	case c.session.remoteSessionId:
 		c.session.window.Add(packetId)
-	} else if sessionId == c.session.lastRemoteSessionId {
+	case c.session.lastRemoteSessionId:
 		c.session.lastWindow.Add(packetId)
 		c.session.lastRemoteSeen = c.time().Unix()
-	} else {
+	default:
 		if c.session.remoteSessionId != 0 {
 			if c.time().Unix()-c.session.lastRemoteSeen < 60 {
 				return M.Socksaddr{}, ErrTooManyServerSessions
